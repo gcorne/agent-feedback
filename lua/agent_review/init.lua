@@ -1,0 +1,117 @@
+local commands = require("agent_review.commands")
+local config = require("agent_review.config")
+local extmarks = require("agent_review.extmarks")
+local float = require("agent_review.float")
+local storage = require("agent_review.storage")
+
+local M = {}
+
+local augroup = nil
+
+local function current_range(opts)
+  if opts and opts.range and opts.range > 0 then
+    return math.min(opts.line1, opts.line2), math.max(opts.line1, opts.line2)
+  end
+
+  local line = vim.api.nvim_win_get_cursor(0)[1]
+  return line, line
+end
+
+local function current_relative_path()
+  local path = vim.api.nvim_buf_get_name(0)
+  if path == "" then
+    return nil
+  end
+
+  return storage.relative_path(path)
+end
+
+function M.setup(opts)
+  config.setup(opts)
+  extmarks.setup()
+  commands.setup()
+
+  if augroup then
+    vim.api.nvim_del_augroup_by_id(augroup)
+  end
+
+  augroup = vim.api.nvim_create_augroup("AgentReview", { clear = true })
+
+  vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost" }, {
+    group = augroup,
+    callback = function(args)
+      extmarks.refresh_buffer(args.buf)
+    end,
+  })
+end
+
+function M.add_comment(opts)
+  local path = current_relative_path()
+  if path == nil then
+    vim.notify("AgentReview: current buffer has no file path", vim.log.levels.WARN)
+    return
+  end
+
+  local start_line, end_line = current_range(opts)
+
+  float.open({ end_line = end_line }, function(body)
+    storage.add({
+      path = path,
+      start_line = start_line,
+      end_line = end_line,
+      body = body,
+    })
+
+    extmarks.refresh_buffer(0)
+    vim.notify("AgentReview: comment added", vim.log.levels.INFO)
+  end)
+end
+
+function M.export()
+  extmarks.sync_all_loaded_buffers()
+  local file = storage.export()
+  vim.notify("AgentReview: exported feedback to " .. file, vim.log.levels.INFO)
+end
+
+function M.import()
+  local ok, file = storage.import()
+  if not ok then
+    vim.notify("AgentReview: no feedback file at " .. file, vim.log.levels.WARN)
+    return
+  end
+
+  extmarks.refresh_all_loaded_buffers()
+  vim.notify("AgentReview: imported feedback from " .. file, vim.log.levels.INFO)
+end
+
+function M.list()
+  local items = {}
+
+  for _, comment in ipairs(storage.comments) do
+    local first_line = (comment.body or ""):gsub("\n", " ")
+    table.insert(items, {
+      filename = storage.absolute_path(comment.path),
+      lnum = comment.start_line,
+      end_lnum = comment.end_line,
+      text = first_line,
+    })
+  end
+
+  vim.fn.setqflist({}, " ", {
+    title = "Agent Review",
+    items = items,
+  })
+
+  vim.cmd("copen")
+end
+
+function M.clear()
+  storage.clear()
+  extmarks.refresh_all_loaded_buffers()
+  vim.notify("AgentReview: cleared comments from memory", vim.log.levels.INFO)
+end
+
+M.storage = storage
+M.format = require("agent_review.format")
+
+return M
