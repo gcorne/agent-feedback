@@ -1,0 +1,4 @@
+interface:
+  display_name: "Address Feedback"
+  short_description: "Read and resolve agent review feedback"
+  default_prompt: "Use $address-feedback to read .agent-review/feedback.md and address the requested code changes."
