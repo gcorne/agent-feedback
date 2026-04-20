@@ -1,39 +1,46 @@
 local M = {}
 
 function M.setup()
-  vim.api.nvim_create_user_command("AgentReviewAdd", function(opts)
-    require("agent_review").add_comment(opts)
+  vim.api.nvim_create_user_command("AgentFeedback", function(opts)
+    require("agent_review").feedback(opts)
   end, {
-    desc = "Add an agent review comment for the current line or range",
+    desc = "Add or edit feedback for the current line or range",
     force = true,
     range = true,
   })
 
-  vim.api.nvim_create_user_command("AgentReviewExport", function()
+  vim.api.nvim_create_user_command("AgentFeedbackExport", function()
     require("agent_review").export()
   end, {
-    desc = "Export agent review comments",
+    desc = "Export feedback comments",
     force = true,
   })
 
-  vim.api.nvim_create_user_command("AgentReviewImport", function()
+  vim.api.nvim_create_user_command("AgentFeedbackImport", function()
     require("agent_review").import()
   end, {
-    desc = "Import agent review comments",
+    desc = "Import feedback comments",
     force = true,
   })
 
-  vim.api.nvim_create_user_command("AgentReviewList", function()
+  vim.api.nvim_create_user_command("AgentFeedbackList", function()
     require("agent_review").list()
   end, {
-    desc = "List agent review comments",
+    desc = "List feedback comments",
     force = true,
   })
 
-  vim.api.nvim_create_user_command("AgentReviewClear", function()
-    require("agent_review").clear()
+  vim.api.nvim_create_user_command("AgentFeedbackDelete", function()
+    require("agent_review").delete()
   end, {
-    desc = "Clear agent review comments from memory",
+    desc = "Delete feedback for the current line",
+    force = true,
+  })
+
+  vim.api.nvim_create_user_command("AgentFeedbackNew", function()
+    require("agent_review").new()
+  end, {
+    desc = "Start a new feedback file",
     force = true,
   })
 end

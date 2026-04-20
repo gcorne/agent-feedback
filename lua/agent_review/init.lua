@@ -26,8 +26,28 @@ local function current_relative_path()
   return storage.relative_path(path)
 end
 
+local function find_comment(path, start_line, end_line)
+  local containing = nil
+  local overlapping = nil
+
+  for _, comment in ipairs(storage.comments_for_path(path)) do
+    if comment.start_line == start_line and comment.end_line == end_line then
+      return comment
+    end
+
+    if comment.start_line <= start_line and comment.end_line >= end_line then
+      containing = containing or comment
+    elseif comment.start_line <= end_line and start_line <= comment.end_line then
+      overlapping = overlapping or comment
+    end
+  end
+
+  return containing or overlapping
+end
+
 function M.setup(opts)
   config.setup(opts)
+  storage.start()
   extmarks.setup()
   commands.setup()
 
@@ -40,12 +60,18 @@ function M.setup(opts)
   vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost" }, {
     group = augroup,
     callback = function(args)
+      if args.event == "BufWritePost" then
+        extmarks.sync_buffer(args.buf)
+        storage.autosave()
+      end
+
       extmarks.refresh_buffer(args.buf)
     end,
   })
 end
 
-function M.add_comment(opts)
+function M.feedback(opts)
+  local source_buf = vim.api.nvim_get_current_buf()
   local path = current_relative_path()
   if path == nil then
     vim.notify("AgentReview: current buffer has no file path", vim.log.levels.WARN)
@@ -53,18 +79,57 @@ function M.add_comment(opts)
   end
 
   local start_line, end_line = current_range(opts)
+  local comment = find_comment(path, start_line, end_line)
 
-  float.open({ end_line = end_line }, function(body)
-    storage.add({
-      path = path,
-      start_line = start_line,
-      end_line = end_line,
-      body = body,
-    })
+  float.open({ end_line = end_line, body = comment and comment.body or "" }, function(body)
+    if body == "" and comment == nil then
+      return
+    end
 
-    extmarks.refresh_buffer(0)
-    vim.notify("AgentReview: comment added", vim.log.levels.INFO)
+    if comment then
+      storage.update(comment, { body = body })
+      vim.notify("AgentReview: comment updated", vim.log.levels.INFO)
+    else
+      storage.add({
+        path = path,
+        start_line = start_line,
+        end_line = end_line,
+        body = body,
+      })
+      vim.notify("AgentReview: comment added", vim.log.levels.INFO)
+    end
+
+    if vim.api.nvim_buf_is_valid(source_buf) then
+      extmarks.refresh_buffer(source_buf)
+    end
   end)
+end
+
+M.add_comment = M.feedback
+
+function M.delete()
+  local source_buf = vim.api.nvim_get_current_buf()
+  local path = current_relative_path()
+  if path == nil then
+    vim.notify("AgentReview: current buffer has no file path", vim.log.levels.WARN)
+    return
+  end
+
+  extmarks.sync_buffer(source_buf)
+  local line = vim.api.nvim_win_get_cursor(0)[1]
+  local comment = find_comment(path, line, line)
+  if comment == nil then
+    vim.notify("AgentReview: no feedback on current line", vim.log.levels.WARN)
+    return
+  end
+
+  storage.delete(comment)
+
+  if vim.api.nvim_buf_is_valid(source_buf) then
+    extmarks.refresh_buffer(source_buf)
+  end
+
+  vim.notify("AgentReview: comment deleted", vim.log.levels.INFO)
 end
 
 function M.export()
@@ -105,11 +170,13 @@ function M.list()
   vim.cmd("copen")
 end
 
-function M.clear()
-  storage.clear()
+function M.new()
+  storage.new()
   extmarks.refresh_all_loaded_buffers()
-  vim.notify("AgentReview: cleared comments from memory", vim.log.levels.INFO)
+  vim.notify("AgentReview: started a new feedback file", vim.log.levels.INFO)
 end
+
+M.clear = M.new
 
 M.storage = storage
 M.format = require("agent_review.format")
