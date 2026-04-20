@@ -1,5 +1,5 @@
-local config = require("agent_review.config")
-local format = require("agent_review.format")
+local config = require("agent_feedback.config")
+local format = require("agent_feedback.format")
 
 local M = {}
 

@@ -27,11 +27,11 @@ function M.open(opts, on_submit)
     initial_lines = vim.split(initial_body, "\n", { plain = true })
   end
 
-  vim.api.nvim_buf_set_name(buf, string.format("agent-review://feedback/%d", buf))
+  vim.api.nvim_buf_set_name(buf, string.format("agent_feedback://feedback/%d", buf))
   vim.api.nvim_buf_set_option(buf, "buftype", "acwrite")
   vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
   vim.api.nvim_buf_set_option(buf, "swapfile", false)
-  vim.api.nvim_buf_set_option(buf, "filetype", "agent-review-comment")
+  vim.api.nvim_buf_set_option(buf, "filetype", "agent_feedback-comment")
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, initial_lines)
   vim.api.nvim_buf_set_option(buf, "modified", false)
 

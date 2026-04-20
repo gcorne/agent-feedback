@@ -1,8 +1,8 @@
-local commands = require("agent_review.commands")
-local config = require("agent_review.config")
-local extmarks = require("agent_review.extmarks")
-local float = require("agent_review.float")
-local storage = require("agent_review.storage")
+local commands = require("agent_feedback.commands")
+local config = require("agent_feedback.config")
+local extmarks = require("agent_feedback.extmarks")
+local float = require("agent_feedback.float")
+local storage = require("agent_feedback.storage")
 
 local M = {}
 
@@ -55,7 +55,7 @@ function M.setup(opts)
     vim.api.nvim_del_augroup_by_id(augroup)
   end
 
-  augroup = vim.api.nvim_create_augroup("AgentReview", { clear = true })
+  augroup = vim.api.nvim_create_augroup("AgentFeedback", { clear = true })
 
   vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost" }, {
     group = augroup,
@@ -74,7 +74,7 @@ function M.feedback(opts)
   local source_buf = vim.api.nvim_get_current_buf()
   local path = current_relative_path()
   if path == nil then
-    vim.notify("AgentReview: current buffer has no file path", vim.log.levels.WARN)
+    vim.notify("AgentFeedback: current buffer has no file path", vim.log.levels.WARN)
     return
   end
 
@@ -88,7 +88,7 @@ function M.feedback(opts)
 
     if comment then
       storage.update(comment, { body = body })
-      vim.notify("AgentReview: comment updated", vim.log.levels.INFO)
+      vim.notify("AgentFeedback: comment updated", vim.log.levels.INFO)
     else
       storage.add({
         path = path,
@@ -96,7 +96,7 @@ function M.feedback(opts)
         end_line = end_line,
         body = body,
       })
-      vim.notify("AgentReview: comment added", vim.log.levels.INFO)
+      vim.notify("AgentFeedback: comment added", vim.log.levels.INFO)
     end
 
     if vim.api.nvim_buf_is_valid(source_buf) then
@@ -111,7 +111,7 @@ function M.delete()
   local source_buf = vim.api.nvim_get_current_buf()
   local path = current_relative_path()
   if path == nil then
-    vim.notify("AgentReview: current buffer has no file path", vim.log.levels.WARN)
+    vim.notify("AgentFeedback: current buffer has no file path", vim.log.levels.WARN)
     return
   end
 
@@ -119,7 +119,7 @@ function M.delete()
   local line = vim.api.nvim_win_get_cursor(0)[1]
   local comment = find_comment(path, line, line)
   if comment == nil then
-    vim.notify("AgentReview: no feedback on current line", vim.log.levels.WARN)
+    vim.notify("AgentFeedback: no feedback on current line", vim.log.levels.WARN)
     return
   end
 
@@ -129,24 +129,24 @@ function M.delete()
     extmarks.refresh_buffer(source_buf)
   end
 
-  vim.notify("AgentReview: comment deleted", vim.log.levels.INFO)
+  vim.notify("AgentFeedback: comment deleted", vim.log.levels.INFO)
 end
 
 function M.export()
   extmarks.sync_all_loaded_buffers()
   local file = storage.export()
-  vim.notify("AgentReview: exported feedback to " .. file, vim.log.levels.INFO)
+  vim.notify("AgentFeedback: exported feedback to " .. file, vim.log.levels.INFO)
 end
 
 function M.import()
   local ok, file = storage.import()
   if not ok then
-    vim.notify("AgentReview: no feedback file at " .. file, vim.log.levels.WARN)
+    vim.notify("AgentFeedback: no feedback file at " .. file, vim.log.levels.WARN)
     return
   end
 
   extmarks.refresh_all_loaded_buffers()
-  vim.notify("AgentReview: imported feedback from " .. file, vim.log.levels.INFO)
+  vim.notify("AgentFeedback: imported feedback from " .. file, vim.log.levels.INFO)
 end
 
 function M.list()
@@ -163,7 +163,7 @@ function M.list()
   end
 
   vim.fn.setqflist({}, " ", {
-    title = "Agent Review",
+    title = "Agent Feedback",
     items = items,
   })
 
@@ -173,12 +173,12 @@ end
 function M.new()
   storage.new()
   extmarks.refresh_all_loaded_buffers()
-  vim.notify("AgentReview: started a new feedback file", vim.log.levels.INFO)
+  vim.notify("AgentFeedback: started a new feedback file", vim.log.levels.INFO)
 end
 
 M.clear = M.new
 
 M.storage = storage
-M.format = require("agent_review.format")
+M.format = require("agent_feedback.format")
 
 return M

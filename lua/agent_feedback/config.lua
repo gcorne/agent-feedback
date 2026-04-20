@@ -1,8 +1,8 @@
 local M = {}
 
 M.defaults = {
-  feedback_path = ".agent-review/feedback.md",
-  history_path = ".agent-review/history",
+  feedback_path = ".agent-feedback/feedback.md",
+  history_path = ".agent-feedback/history",
   autosave = true,
   sign_text = ">>",
   virtual_text = "review",

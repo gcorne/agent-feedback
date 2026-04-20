@@ -1,2 +1,3 @@
-.agent-review/
-nvim.log
+.DS_Store
+*.log
+.agent-feedback/

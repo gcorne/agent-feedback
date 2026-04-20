@@ -1,13 +1,13 @@
-local config = require("agent_review.config")
-local storage = require("agent_review.storage")
+local config = require("agent_feedback.config")
+local storage = require("agent_feedback.storage")
 
 local M = {}
 
-M.ns = vim.api.nvim_create_namespace("agent_review")
+M.ns = vim.api.nvim_create_namespace("agent_feedback")
 
 function M.setup()
-  vim.cmd("highlight default link AgentReviewSign DiagnosticInfo")
-  vim.cmd("highlight default link AgentReviewVirtualText Comment")
+  vim.cmd("highlight default link AgentFeedbackSign DiagnosticInfo")
+  vim.cmd("highlight default link AgentFeedbackVirtualText Comment")
 end
 
 local function buffer_path(bufnr)
@@ -45,7 +45,7 @@ function M.refresh_buffer(bufnr)
       local opts = {
         right_gravity = false,
         sign_text = config.options.sign_text,
-        sign_hl_group = "AgentReviewSign",
+        sign_hl_group = "AgentFeedbackSign",
       }
 
       if config.options.line_hl_group then
@@ -53,7 +53,7 @@ function M.refresh_buffer(bufnr)
       end
 
       if line == end_line then
-        opts.virt_text = { { config.options.virtual_text, "AgentReviewVirtualText" } }
+        opts.virt_text = { { config.options.virtual_text, "AgentFeedbackVirtualText" } }
         opts.virt_text_pos = "eol"
       end
 
