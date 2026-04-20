@@ -1,13 +1,13 @@
 ---
 name: address-feedback
-description: Read and address line-anchored review feedback exported in `.agent-review/feedback.md` files. Use when the user invokes `/address-feedback` or asks Codex to read, apply, resolve, or summarize AgentReview feedback from `.agent-review/feedback.md`, especially blocks formatted as `@@ path:start_line,end_line @@` followed by reviewer comments.
+description: Read and address line-anchored review feedback exported by agent_feedback to `.agent-feedback/feedback.md` files. Use when the user invokes `/address-feedback` or asks Codex to read, apply, resolve, or summarize feedback from `.agent-feedback/feedback.md`, especially blocks formatted as `@@ path:start_line,end_line @@` followed by reviewer comments.
 ---
 
 # Address Feedback
 
 ## Overview
 
-Use this skill to turn `.agent-review/feedback.md` review notes into code changes. The feedback file contains one or more blocks:
+Use this skill to turn `.agent-feedback/feedback.md` review notes into code changes. The feedback file contains one or more blocks:
 
 ```text
 @@ path/to/file.ext:start_line,end_line @@
@@ -20,8 +20,8 @@ Treat paths as repo-relative unless they are absolute.
 
 1. Locate the feedback file.
    - Use the path the user provides.
-   - Otherwise read `.agent-review/feedback.md` from the current repository root.
-   - If the user asks to process multiple repositories or workspaces, find each `.agent-review/feedback.md` and handle them separately.
+   - Otherwise read `.agent-feedback/feedback.md` from the current repository root.
+   - If the user asks to process multiple repositories or workspaces, find each `.agent-feedback/feedback.md` and handle them separately.
 
 2. Parse the feedback blocks.
    - A block starts with `@@ path:start_line,end_line @@`.
