@@ -1,0 +1,193 @@
+*agent-feedback.txt*   Line-anchored review notes for Neovim   Last change: 2026 Apr 22
+
+Agent Feedback is a small Neovim plugin for leaving line-anchored feedback on
+code changes made by an AI agent. Feedback can be exported to a flat Markdown
+file that a coding agent can read and turn into follow-up code changes.
+
+==============================================================================
+CONTENTS                                              *agent-feedback-contents*
+
+Introduction .................................... |agent-feedback-introduction|
+Setup ..................................................... |agent-feedback-setup|
+Commands ............................................... |agent-feedback-commands|
+Configuration ...................................... |agent-feedback-configuration|
+Highlight groups ................................... |agent-feedback-highlights|
+Feedback file format ............................... |agent-feedback-file-format|
+
+==============================================================================
+INTRODUCTION                                      *agent-feedback-introduction*
+
+Agent Feedback stores comments against the current file and line range, then
+renders them back into buffers with signs and virtual text.
+
+By default, feedback is exported to: >
+  .agent-feedback/feedback.md
+<
+Comment positions are tracked with extmarks, so saved line numbers follow edits
+in loaded buffers until the next export or autosave.
+
+==============================================================================
+SETUP                                                      *agent-feedback-setup*
+                                                           *agent-feedback*
+
+Install the plugin with your preferred plugin manager and call: >
+  require("agent_feedback").setup()
+<
+The plugin also calls `setup()` automatically from `plugin/agent_feedback.lua`
+when it is loaded. Call `setup({...})` yourself only when you want to override
+defaults.
+
+Example: >
+  require("agent_feedback").setup({
+    feedback_path = ".agent-feedback/feedback.md",
+    history_path = ".agent-feedback/history",
+    autosave = true,
+    sign_text = ">>",
+    virtual_text = "review",
+    line_hl_group = nil,
+  })
+<
+Relative paths are resolved from the Git project root. If the current working
+directory is not inside a Git worktree, Agent Feedback uses the current working
+directory instead.
+
+==============================================================================
+COMMANDS                                                *agent-feedback-commands*
+
+:AgentFeedback                                               *:AgentFeedback*
+        Add or edit feedback for the current line.
+
+        This command also accepts a visual selection or Ex range such as: >
+          :'<,'>AgentFeedback
+<
+        The comment is anchored to the selected line span.
+
+        If the selected range exactly matches an existing comment, or falls
+        inside an existing comment, that comment is reopened for editing.
+
+        The floating editor buffer supports:
+          <CR>      save in Normal mode
+          <C-s>     save in Normal or Insert mode
+          :write    save
+          q         cancel in Normal mode
+          <Esc>     cancel in Normal mode
+          <C-c>     cancel in Insert mode
+
+:AgentFeedbackExport                                   *:AgentFeedbackExport*
+        Export all in-memory comments to `feedback_path`.
+
+        Before writing, Agent Feedback synchronizes comment positions from
+        extmarks in loaded buffers so exported line numbers match current file
+        contents.
+
+:AgentFeedbackImport                                   *:AgentFeedbackImport*
+        Import comments from `feedback_path` and refresh annotations in loaded
+        buffers.
+
+        If the feedback file does not exist, Agent Feedback shows a warning and
+        leaves current comments unchanged.
+
+:AgentFeedbackList                                       *:AgentFeedbackList*
+        Populate the quickfix list with one entry per comment and open the
+        quickfix window.
+
+:AgentFeedbackDelete                                   *:AgentFeedbackDelete*
+        Delete the comment that contains the current cursor line.
+
+:AgentFeedbackNew                                         *:AgentFeedbackNew*
+        Archive the current feedback file to `history_path` and clear all
+        in-memory comments.
+
+        This is useful when starting a fresh review after exporting or importing
+        a previous feedback file.
+
+==============================================================================
+CONFIGURATION                                      *agent-feedback-configuration*
+
+Configure Agent Feedback from Lua: >
+  require("agent_feedback").setup({
+    feedback_path = ".agent-feedback/feedback.md",
+    history_path = ".agent-feedback/history",
+    autosave = true,
+    sign_text = ">>",
+    virtual_text = "review",
+    line_hl_group = nil,
+  })
+<
+feedback_path                              *agent-feedback-feedback_path*
+        Type: `string`
+        Default: `".agent-feedback/feedback.md"`
+
+        File used by |:AgentFeedbackExport| and |:AgentFeedbackImport|.
+
+        Absolute paths are used as-is. Relative paths are resolved from the
+        project root described in |agent-feedback-setup|.
+
+history_path                                *agent-feedback-history_path*
+        Type: `string`
+        Default: `".agent-feedback/history"`
+
+        Directory used for archived feedback files.
+
+        Existing feedback at |agent-feedback-feedback_path| is archived into
+        this directory when the plugin starts with a non-empty feedback file,
+        and again when you run |:AgentFeedbackNew|.
+
+autosave                                      *agent-feedback-autosave*
+        Type: `boolean`
+        Default: `true`
+
+        When enabled, comment changes are exported automatically after add,
+        edit, and delete operations. Saving a source buffer also updates tracked
+        line numbers and exports the current feedback file.
+
+sign_text                                    *agent-feedback-sign_text*
+        Type: `string`
+        Default: `">>"`
+
+        Text shown in the sign column for each line in a commented range.
+
+virtual_text                              *agent-feedback-virtual_text*
+        Type: `string`
+        Default: `"review"`
+
+        Inline label shown at end of line for the last line in a commented
+        range.
+
+line_hl_group                            *agent-feedback-line_hl_group*
+        Type: `string|nil`
+        Default: `nil`
+
+        Optional line highlight group applied to each line in a commented
+        range. Leave this as `nil` to disable full-line highlighting.
+
+==============================================================================
+HIGHLIGHT GROUPS                                       *agent-feedback-highlights*
+
+Agent Feedback defines the following highlight groups:
+
+AgentFeedbackSign
+        Used for sign column text. By default this links to `DiagnosticInfo`.
+
+AgentFeedbackVirtualText
+        Used for inline text at the end of the commented range. By default this
+        links to `Comment`.
+
+You can override either highlight group with `:highlight` or
+`vim.api.nvim_set_hl()`.
+
+==============================================================================
+FEEDBACK FILE FORMAT                                *agent-feedback-file-format*
+
+Exported feedback uses a simple block format: >
+  @@ lua/agent_feedback/init.lua:12,16 @@
+  Explain why this range needs to change.
+  Mention follow-up work here.
+<
+Each block starts with `@@ path:start_line,end_line @@`. Everything that
+follows, up to the next header, becomes the comment body.
+
+Paths are stored relative to the project root when possible. Blank lines between
+entries are allowed.
+
+vim:tw=78:ts=8:noet:ft=help:norl:
