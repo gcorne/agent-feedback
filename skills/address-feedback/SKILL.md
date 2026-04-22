@@ -14,14 +14,16 @@ Use this skill to turn `.agent-feedback/feedback.md` review notes into code chan
 Reviewer comment text
 ```
 
-Treat paths as repo-relative unless they are absolute.
+Treat paths as relative to the directory that contains the feedback file unless they are absolute.
 
 ## Workflow
 
 1. Locate the feedback file.
    - Use the path the user provides.
-   - Otherwise read `.agent-feedback/feedback.md` from the current repository root.
-   - If the user asks to process multiple repositories or workspaces, find each `.agent-feedback/feedback.md` and handle them separately.
+   - Otherwise first look for `.agent-feedback/feedback.md` in the current working directory.
+   - If it is not there, run `git rev-parse --show-toplevel` from the current working directory. Treat the result as the root of the current git checkout or worktree, then look for `.agent-feedback/feedback.md` there.
+   - If neither location has the file, or `git rev-parse --show-toplevel` fails, stop and ask the user which repository or feedback file to use.
+   - If the user asks to process multiple repositories or workspaces, apply the same lookup order in each one separately: current working directory first, then that checkout or worktree root.
 
 2. Parse the feedback blocks.
    - A block starts with `@@ path:start_line,end_line @@`.
